@@ -15,10 +15,10 @@ def generate_unit_test_file(service_file_path):
     injected_dependencies=get_injected_dependencies()
     mocked_declarations=generate_mocked_declarations(injected_dependencies)  
 
-    for x in mocked_declarations:
-        print(x)
+    setup_method_statements=generate_setup_method(mocked_declarations)
 
-    setup_method=generate_setup_method(mocked_declarations)
+    
+   
 
     
 def get_injected_dependencies():
@@ -30,7 +30,7 @@ def get_injected_dependencies():
 
 def is_injected_dependency(line):
     line=line.strip()
-    return re.search('private[\s]readonly[\s][^ ]+[\s]_[^ ;]+;',line)
+    return re.search(r'private[\s]readonly[\s][^ ]+[\s]_[^ ;]+;',line)
 
 def generate_mocked_declarations(injected_dependencies):
     mocked_declarations=[]
@@ -39,7 +39,7 @@ def generate_mocked_declarations(injected_dependencies):
         statement_segments=injected_dependency.split()
         statement_segments[2]=f'Mock<{statement_segments[2]}>'
         statement_segments.remove('readonly')
-        
+
         mocked_declarations.append(' '.join(statement_segments))
     return mocked_declarations
 
@@ -57,9 +57,10 @@ def generate_setup_method(mocked_declarations):
     for declaration in mocked_declarations:
         statement_segments=declaration.split()
         dependency_name=statement_segments[-1][:-1]
-        print(dependency_name)
+        mocked_declaration_type=statement_segments[1]
+        
+        lines.append(f'\t{dependency_name} = new {mocked_declaration_type}();')
 
-        lines.append(f'')
-
-    return '\n'.join(lines);
+    lines.append('}')
+    return lines;
 generate_unit_test_file(service_file_path)
