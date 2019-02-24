@@ -20,7 +20,6 @@ def generate_unit_test_file(service_file_path):
 
     setup_method=generate_setup_method(mocked_declarations)
 
-    print(unit_test_name)  
     
 def get_injected_dependencies():
     injected_dependencies=[]
@@ -39,7 +38,8 @@ def generate_mocked_declarations(injected_dependencies):
     for injected_dependency in injected_dependencies:
         statement_segments=injected_dependency.split()
         statement_segments[2]=f'Mock<{statement_segments[2]}>'
-
+        statement_segments.remove('readonly')
+        
         mocked_declarations.append(' '.join(statement_segments))
     return mocked_declarations
 
