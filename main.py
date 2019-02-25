@@ -11,14 +11,21 @@ import os
 service_file_path="ExampleService.cs"
 
 def generate_unit_test_file(service_file_path):
-    unit_test_name=generate_unit_test_name(service_file_path)
+    service_name=os.path.basename(os.path.normpath(service_file_path))[:-3]
+    unit_test_name= generate_unit_test_name(service_file_path)
     injected_dependencies=get_injected_dependencies()
     mocked_declarations=generate_mocked_declarations(injected_dependencies)  
+    setup_method_statements=generate_setup_method(mocked_declarations,service_name)
 
-    setup_method_statements=generate_setup_method(mocked_declarations)
-
-    
-   
+    with open(unit_test_name, "w") as f:
+        f.write('[TestFixture]\n')
+        f.write(f'public class {unit_test_name[:-3]}\n')
+        for declaration in mocked_declarations:
+            f.write(f'\t{declaration}\n')
+        f.write('\n')
+        f.write(f'\tprivate {service_name};\n\n')
+        for statement in setup_method_statements:
+            f.write(f'\t{statement}\n')
 
     
 def get_injected_dependencies():
@@ -43,12 +50,11 @@ def generate_mocked_declarations(injected_dependencies):
         mocked_declarations.append(' '.join(statement_segments))
     return mocked_declarations
 
-
 def generate_unit_test_name(service_file_path):
     service_name=os.path.basename(os.path.normpath(service_file_path))
     return service_name[:-3] + 'Tests' + service_name[-3:]
 
-def generate_setup_method(mocked_declarations):
+def generate_setup_method(mocked_declarations,service_name):
     lines=[]
     lines.append('[SetUp]')
     lines.append('public void SetUp()')
@@ -61,6 +67,20 @@ def generate_setup_method(mocked_declarations):
         
         lines.append(f'\t{dependency_name} = new {mocked_declaration_type}();')
 
+    constructor_statement=generate_constructor_statement(service_name,mocked_declarations)
+    "constructor:"+constructor_statement
+    lines.append(f'\n\t\t{constructor_statement}')
     lines.append('}')
     return lines;
+
+def generate_constructor_statement(service_name, mocked_declarations):
+    parameters=[]
+    for declaration in mocked_declarations:
+        declaration_segments=declaration.split();
+        dependency_name=declaration_segments[-1][:-1]
+        parameters.append(f'{dependency_name}.Object')
+    
+    comma_separated_parameters=','.join(parameters)
+    return f'{service_name} = new {service_name}({comma_separated_parameters});'
+
 generate_unit_test_file(service_file_path)
